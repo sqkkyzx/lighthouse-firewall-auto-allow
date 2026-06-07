@@ -25,7 +25,12 @@ from lighthouse_firewall_auto_allow.rules import (
     normalize_port,
     normalize_protocol,
 )
-from lighthouse_firewall_auto_allow.security import generate_token, hash_token, validate_client_id
+from lighthouse_firewall_auto_allow.security import (
+    generate_token,
+    hash_token,
+    validate_client_id,
+    verify_token,
+)
 from lighthouse_firewall_auto_allow.templating import templates
 from lighthouse_firewall_auto_allow.tencent import TencentLighthouseFirewallGateway
 
@@ -288,13 +293,14 @@ def download_install_script(
     token: str,
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
-    actor: str | RedirectResponse = Depends(admin_actor_or_redirect),
 ):
-    if isinstance(actor, RedirectResponse):
-        return actor
     client = db.get(Client, client_id)
     if client is None:
         raise HTTPException(status_code=404)
+    if client.status == "deleted":
+        raise HTTPException(status_code=410, detail={"status": "deleted", "action": "uninstall"})
+    if not verify_token(token, client.token_hash):
+        raise HTTPException(status_code=401, detail="Invalid install token")
     script = generate_agent_script(client, token=token, public_base_url=settings.public_base_url)
     return Response(
         script.body,

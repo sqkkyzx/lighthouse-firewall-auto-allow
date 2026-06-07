@@ -36,6 +36,7 @@ docker compose up -d --build
 - `OIDC_CLIENT_SECRET`
 - `OIDC_SCOPE`，默认 `openid profile email`；如果 OIDC 网关返回的 `id_token` 不包含
   `nonce`，可设为 `profile email`，让应用改用 userinfo 获取用户资料。
+- `OIDC_HTTP_TIMEOUT`，默认 `15` 秒，用于 discovery、token、userinfo 等 OIDC HTTP 请求。
 - `ADMIN_EMAILS`
 - `TENCENTCLOUD_SECRET_ID`
 - `TENCENTCLOUD_SECRET_KEY`

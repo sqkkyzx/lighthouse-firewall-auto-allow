@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     oidc_client_id: str = Field(default="")
     oidc_client_secret: str = Field(default="")
     oidc_scope: str = Field(default="openid profile email")
+    oidc_http_timeout: float = Field(default=15.0)
     admin_emails: str = Field(default="")
 
     tencentcloud_secret_id: str = Field(default="")

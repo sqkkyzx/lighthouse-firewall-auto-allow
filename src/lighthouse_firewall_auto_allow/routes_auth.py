@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import httpx
 from authlib.integrations.starlette_client import OAuth
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
@@ -18,7 +19,7 @@ def configure_oauth(app, settings: Settings) -> None:
             client_id=settings.oidc_client_id,
             client_secret=settings.oidc_client_secret,
             server_metadata_url=settings.oidc_discovery_url,
-            client_kwargs={"scope": settings.oidc_scope},
+            client_kwargs={"scope": settings.oidc_scope, "timeout": settings.oidc_http_timeout},
         )
     app.state.oauth = oauth
 
@@ -40,7 +41,7 @@ async def auth_callback(request: Request, settings: Settings = Depends(get_setti
     token = await request.app.state.oauth.oidc.authorize_access_token(request)
     userinfo = token.get("userinfo")
     if userinfo is None:
-        userinfo = await request.app.state.oauth.oidc.userinfo(token=token)
+        userinfo = await _fetch_userinfo_with_retry(request, token, settings)
     request.session["user"] = dict(userinfo)
     return RedirectResponse("/", status_code=303)
 
@@ -49,3 +50,16 @@ async def auth_callback(request: Request, settings: Settings = Depends(get_setti
 async def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
+
+
+async def _fetch_userinfo_with_retry(request: Request, token: dict, settings: Settings):
+    last_error: httpx.ReadTimeout | None = None
+    for _ in range(2):
+        try:
+            return await request.app.state.oauth.oidc.userinfo(
+                token=token,
+                timeout=settings.oidc_http_timeout,
+            )
+        except httpx.ReadTimeout as e:
+            last_error = e
+    raise HTTPException(status_code=502, detail="OIDC userinfo endpoint timed out") from last_error
