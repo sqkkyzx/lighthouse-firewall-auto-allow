@@ -325,6 +325,24 @@ legend {
   margin: 8px 0;
 }
 
+.option-line {
+  min-height: 36px;
+  margin: 0;
+  align-self: end;
+}
+
+.form-note {
+  margin: 0;
+  color: #627083;
+  font-size: 13px;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

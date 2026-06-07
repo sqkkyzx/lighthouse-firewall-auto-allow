@@ -1,6 +1,6 @@
 [project]
 name = "lighthouse-firewall-auto-allow"
-version = "0.1.4"
+version = "0.1.5"
 description = "Center-agent Tencent Cloud Lighthouse firewall auto allow service."
 readme = "README.md"
 requires-python = ">=3.12"

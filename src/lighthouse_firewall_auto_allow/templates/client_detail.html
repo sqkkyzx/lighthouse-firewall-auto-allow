@@ -42,6 +42,69 @@
   <div><label>最后上报</label><span>{{ client.last_report_at|local_dt }}</span></div>
 </section>
 
+{% if client.status != "deleted" %}
+<section class="panel">
+  <h2>客户端配置</h2>
+  <form class="stack-form" method="post" action="/clients/{{ client.id }}/config">
+    <div class="form-row">
+      <label>平台
+        <select name="platform">
+          <option value="ubuntu" {% if client.platform == "ubuntu" %}selected{% endif %}>Ubuntu</option>
+          <option value="debian" {% if client.platform == "debian" %}selected{% endif %}>Debian</option>
+          <option value="windows" {% if client.platform == "windows" %}selected{% endif %}>Windows</option>
+          <option value="macos" {% if client.platform == "macos" %}selected{% endif %}>macOS</option>
+        </select>
+      </label>
+      <label>上报频率（秒）
+        <input name="frequency_minutes" type="number" min="1" value="{{ client.frequency_minutes }}" required>
+      </label>
+      <label>IP 模式
+        <select name="ip_mode">
+          <option value="ipv4" {% if client.ip_mode == "ipv4" %}selected{% endif %}>IPv4</option>
+          <option value="ipv6" {% if client.ip_mode == "ipv6" %}selected{% endif %}>IPv6</option>
+          <option value="all" {% if client.ip_mode == "all" %}selected{% endif %}>全部</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>协议
+        <select name="protocol">
+          <option value="TCP" {% if client.protocol == "TCP" %}selected{% endif %}>TCP</option>
+          <option value="UDP" {% if client.protocol == "UDP" %}selected{% endif %}>UDP</option>
+          <option value="ALL" {% if client.protocol == "ALL" %}selected{% endif %}>ALL</option>
+        </select>
+      </label>
+      <label>端口
+        <input name="port" value="{{ client.port }}" placeholder="22,80,443 或 8000-9000 或 ALL" required>
+      </label>
+      <label class="checkline option-line">
+        <input type="checkbox" name="allow_ipv6_prefix" value="1" {% if client.allow_ipv6_prefix %}checked{% endif %}>
+        放通整个 IPv6 /64 前缀
+      </label>
+    </div>
+
+    <fieldset>
+      <legend>绑定目标实例</legend>
+      {% for target in targets %}
+      <label class="checkline">
+        <input type="checkbox" name="target_ids" value="{{ target.id }}" {% if target in client.targets %}checked{% endif %}>
+        {{ target.alias }} / {{ target.region }} / {{ target.instance_id }}
+      </label>
+      {% else %}
+      <p class="empty">还没有目标实例。</p>
+      {% endfor %}
+    </fieldset>
+
+    <p class="form-note">生成新安装命令会同时生成新 token；旧 agent 需要用新命令重装后才能继续上报。</p>
+    <div class="form-actions">
+      <button type="submit" name="generate_install" value="1">保存配置并生成新安装命令</button>
+      <button type="submit">仅保存配置</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+
 <section class="actions">
   {% if client.status != "active" and client.status != "deleted" %}
   <form method="post" action="/clients/{{ client.id }}/status/active"><button type="submit">启用</button></form>

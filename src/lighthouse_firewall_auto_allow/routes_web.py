@@ -155,6 +155,7 @@ async def create_client(
     allow_ipv6_prefix: str | None = Form(None),
     protocol: str = Form(...),
     port: str = Form(...),
+    generate_install: str | None = Form(None),
     db: Session = Depends(get_db),
     actor: str | RedirectResponse = Depends(admin_actor_or_redirect),
 ):
@@ -212,6 +213,7 @@ def client_detail(
         {
             "actor": actor,
             "client": client,
+            "targets": db.scalars(select(Target).order_by(Target.id)).all(),
             "new_token": new_token,
             "install_command": _install_command(client, new_token, get_settings()),
             "uninstall_command": uninstall_command_for_client(client),
@@ -248,6 +250,63 @@ def set_client_status(
         _delete_from_web(db, settings=settings, client=client)
 
     return RedirectResponse(f"/clients/{client.id}", status_code=303)
+
+
+@router.post("/clients/{client_id}/config")
+async def update_client_config(
+    request: Request,
+    client_id: str,
+    platform: str = Form(...),
+    frequency_minutes: int = Form(...),
+    ip_mode: str = Form(...),
+    allow_ipv6_prefix: str | None = Form(None),
+    protocol: str = Form(...),
+    port: str = Form(...),
+    generate_install: str | None = Form(None),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    actor: str | RedirectResponse = Depends(admin_actor_or_redirect),
+):
+    if isinstance(actor, RedirectResponse):
+        return actor
+    client = db.get(Client, client_id)
+    if client is None:
+        raise HTTPException(status_code=404)
+    if client.status == "deleted":
+        raise HTTPException(status_code=409, detail="deleted client cannot be updated")
+
+    form = await request.form()
+    target_ids = [int(item) for item in form.getlist("target_ids")]
+    try:
+        normalized_protocol = normalize_protocol(protocol)
+        normalized_port = normalize_port(normalized_protocol, port)
+        normalized_ip_mode = normalize_ip_mode(ip_mode)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    token = generate_token() if generate_install == "1" else None
+    if token is not None:
+        client.token_hash = hash_token(token)
+    client.platform = platform
+    client.frequency_minutes = max(frequency_minutes, 1)
+    client.ip_mode = normalized_ip_mode
+    client.allow_ipv6_prefix = allow_ipv6_prefix == "1"
+    client.protocol = normalized_protocol
+    client.port = normalized_port
+    client.targets = db.scalars(select(Target).where(Target.id.in_(target_ids))).all()
+    _audit(db, actor=actor, action="update_client_config", subject=client.id, detail="")
+    db.commit()
+    db.refresh(client)
+
+    if client.status == "active" and client.targets:
+        _reconcile_from_web(db, settings=settings, client=client, action="ACCEPT")
+    if client.status == "blocked" and client.targets:
+        _reconcile_from_web(db, settings=settings, client=client, action="DROP")
+
+    location = f"/clients/{client.id}"
+    if token is not None:
+        location = f"{location}?new_token={token}"
+    return RedirectResponse(location, status_code=303)
 
 
 @router.post("/clients/{client_id}/rotate-token")
