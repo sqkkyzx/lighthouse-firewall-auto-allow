@@ -133,12 +133,13 @@ def desired_rules_for_client(client: Client, *, action: str = "ACCEPT") -> list[
             )
         )
     if client.ip_mode in {"ipv6", "all"} and client.last_ipv6 is not None:
+        prefix_length = 64 if client.allow_ipv6_prefix else 128
         rules.append(
             FirewallRule(
                 protocol=client.protocol,
                 port=client.port,
                 action=action,
-                ipv6_cidr_block=f"{client.last_ipv6}/128",
+                ipv6_cidr_block=_ipv6_cidr(client.last_ipv6, prefix_length),
                 description=description,
             )
         )
@@ -179,3 +180,8 @@ def _validate_port_number(value: str) -> None:
     number = int(value)
     if number < 1 or number > 65535:
         raise ValueError("port number must be 1-65535")
+
+
+def _ipv6_cidr(value: str, prefix_length: int) -> str:
+    network = ipaddress.ip_network(f"{value}/{prefix_length}", strict=False)
+    return str(network)

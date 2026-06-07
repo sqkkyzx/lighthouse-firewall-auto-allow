@@ -70,3 +70,29 @@ def test_desired_rules_generate_separate_ipv4_and_ipv6_rules() -> None:
             "Ipv6CidrBlock": "2402:4e00::1/128",
         },
     ]
+
+
+def test_desired_rules_can_allow_ipv6_prefix() -> None:
+    client = Client(
+        id="office",
+        token_hash="hash",
+        platform="ubuntu",
+        frequency_minutes=5,
+        ip_mode="ipv6",
+        allow_ipv6_prefix=True,
+        protocol="TCP",
+        port="22",
+        last_ipv6="240e:37d:1b01:1f00:74c1:8b99:d8f9:b6b1",
+    )
+
+    rules = desired_rules_for_client(client)
+
+    assert [rule.to_payload() for rule in rules] == [
+        {
+            "Protocol": "TCP",
+            "Port": "22",
+            "Action": "ACCEPT",
+            "FirewallRuleDescription": "[AUTO] office",
+            "Ipv6CidrBlock": "240e:37d:1b01:1f00::/64",
+        },
+    ]

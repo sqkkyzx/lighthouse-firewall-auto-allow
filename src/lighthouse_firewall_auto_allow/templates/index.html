@@ -45,7 +45,10 @@
         <td>{{ client.id }}</td>
         <td><span class="status {{ client.status }}">{{ client.status }}</span></td>
         <td>{{ client.platform }}</td>
-        <td>{{ client.protocol }} / {{ client.port }} / {{ client.ip_mode }}</td>
+        <td>
+          {{ client.protocol }} / {{ client.port }} / {{ client.ip_mode }}
+          {% if client.allow_ipv6_prefix %} / IPv6 /64{% endif %}
+        </td>
         <td>{{ client.last_report_at|local_dt }}</td>
         <td>
           <div class="table-actions">

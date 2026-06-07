@@ -35,6 +35,7 @@
   <div><label>频率</label><span>{{ client.frequency_minutes }} 秒</span></div>
   <div><label>IP 模式</label><span>{{ client.ip_mode }}</span></div>
   <div><label>规则</label><span>{{ client.protocol }} / {{ client.port }}</span></div>
+  <div><label>IPv6 范围</label><span>{{ "/64 前缀" if client.allow_ipv6_prefix else "单地址 /128" }}</span></div>
   <div><label>Hostname</label><span>{{ client.hostname or "-" }}</span></div>
   <div><label>IPv4</label><span>{{ client.last_ipv4 or "-" }}</span></div>
   <div class="detail-wide"><label>IPv6</label><span>{{ client.last_ipv6 or "-" }}</span></div>

@@ -38,6 +38,11 @@
       <label>端口<input name="port" value="22" placeholder="22,80,443 或 8000-9000 或 ALL" required></label>
     </div>
 
+    <label class="checkline">
+      <input type="checkbox" name="allow_ipv6_prefix" value="1">
+      放通整个 IPv6 /64 前缀
+    </label>
+
     <fieldset>
       <legend>绑定目标实例</legend>
       {% for target in targets %}

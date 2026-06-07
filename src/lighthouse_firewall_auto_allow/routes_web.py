@@ -152,6 +152,7 @@ async def create_client(
     platform: str = Form(...),
     frequency_minutes: int = Form(...),
     ip_mode: str = Form(...),
+    allow_ipv6_prefix: str | None = Form(None),
     protocol: str = Form(...),
     port: str = Form(...),
     db: Session = Depends(get_db),
@@ -180,6 +181,7 @@ async def create_client(
         platform=platform,
         frequency_minutes=max(frequency_minutes, 1),
         ip_mode=normalized_ip_mode,
+        allow_ipv6_prefix=allow_ipv6_prefix == "1",
         protocol=normalized_protocol,
         port=normalized_port,
     )

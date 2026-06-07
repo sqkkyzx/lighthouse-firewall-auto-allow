@@ -30,6 +30,7 @@ class Client(Base):
     platform: Mapped[str] = mapped_column(String(16), nullable=False)
     frequency_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     ip_mode: Mapped[str] = mapped_column(String(8), nullable=False)
+    allow_ipv6_prefix: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     protocol: Mapped[str] = mapped_column(String(8), nullable=False)
     port: Mapped[str] = mapped_column(String(64), nullable=False)
     hostname: Mapped[str | None] = mapped_column(String(255), nullable=True)

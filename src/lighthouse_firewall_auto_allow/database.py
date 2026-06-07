@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from lighthouse_firewall_auto_allow.config import get_settings
@@ -33,6 +33,24 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 def create_db_and_tables() -> None:
     Base.metadata.create_all(bind=engine)
+    _apply_compatible_migrations()
+
+
+def _apply_compatible_migrations() -> None:
+    inspector = inspect(engine)
+    if "clients" not in inspector.get_table_names():
+        return
+    client_columns = {column["name"] for column in inspector.get_columns("clients")}
+    if "allow_ipv6_prefix" in client_columns:
+        return
+    if engine.dialect.name == "sqlite":
+        statement = "ALTER TABLE clients ADD COLUMN allow_ipv6_prefix BOOLEAN NOT NULL DEFAULT 0"
+    else:
+        statement = (
+            "ALTER TABLE clients ADD COLUMN allow_ipv6_prefix BOOLEAN NOT NULL DEFAULT false"
+        )
+    with engine.begin() as connection:
+        connection.execute(text(statement))
 
 
 def get_db() -> Generator[Session, None, None]:

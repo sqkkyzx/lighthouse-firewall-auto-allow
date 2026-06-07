@@ -8,6 +8,7 @@
 - OIDC 登录，支持 `/.well-known/openid-configuration` 自动发现。
 - 每个客户端 ID 独立 token，并绑定一个或多个 Lighthouse `region + instance_id`。
 - Agent 上报 hostname、IPv4、IPv6 后，中心端按 `[AUTO] {client_id}` 描述维护规则。
+- IPv6 可选择单地址 `/128` 或整个 `/64` 前缀放通。
 - 支持 Linux systemd/cron、macOS launchd、Windows Task Scheduler 安装脚本。
 
 ## 本地运行
