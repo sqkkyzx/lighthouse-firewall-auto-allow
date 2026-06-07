@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}注册客户端{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>注册客户端</h1>
+</section>
+
+<section class="panel">
+  <form class="stack-form" method="post" action="/clients">
+    <div class="form-row">
+      <label>客户端 ID<input name="client_id" placeholder="home-pc" required></label>
+      <label>平台
+        <select name="platform">
+          <option value="ubuntu">Ubuntu</option>
+          <option value="debian">Debian</option>
+          <option value="windows">Windows</option>
+          <option value="macos">macOS</option>
+        </select>
+      </label>
+      <label>上报频率（秒）<input name="frequency_minutes" type="number" min="1" value="300" required></label>
+    </div>
+
+    <div class="form-row">
+      <label>IP 模式
+        <select name="ip_mode">
+          <option value="ipv4">IPv4</option>
+          <option value="ipv6">IPv6</option>
+          <option value="all">全部</option>
+        </select>
+      </label>
+      <label>协议
+        <select name="protocol">
+          <option value="TCP">TCP</option>
+          <option value="UDP">UDP</option>
+          <option value="ALL">ALL</option>
+        </select>
+      </label>
+      <label>端口<input name="port" value="22" placeholder="22,80,443 或 8000-9000 或 ALL" required></label>
+    </div>
+
+    <fieldset>
+      <legend>绑定目标实例</legend>
+      {% for target in targets %}
+      <label class="checkline">
+        <input type="checkbox" name="target_ids" value="{{ target.id }}" {% if target.enabled %}checked{% endif %}>
+        {{ target.alias }} / {{ target.region }} / {{ target.instance_id }}
+      </label>
+      {% else %}
+      <p class="empty">还没有目标实例，可以先注册，后续再绑定。</p>
+      {% endfor %}
+    </fieldset>
+
+    <button type="submit">创建客户端</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}概览{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>概览</h1>
+  <a class="button" href="/clients/new">注册客户端</a>
+</section>
+
+<section class="metrics">
+  <div><span>{{ all_clients|length }}</span><label>客户端</label></div>
+  <div><span>{{ targets|length }}</span><label>目标实例</label></div>
+  <div><span>{{ all_clients|selectattr("status", "equalto", "active")|list|length }}</span><label>启用</label></div>
+  <div><span>{{ all_clients|selectattr("status", "equalto", "blocked")|list|length }}</span><label>阻止</label></div>
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <h2>客户端</h2>
+    {% if show_deleted %}
+    <a class="switch-link is-on" href="/" aria-pressed="true">
+      <span class="switch-track"><span class="switch-thumb"></span></span>
+      <span>已删除</span>
+    </a>
+    {% else %}
+    <a class="switch-link" href="/?show_deleted=1" aria-pressed="false">
+      <span class="switch-track"><span class="switch-thumb"></span></span>
+      <span>已删除</span>
+    </a>
+    {% endif %}
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>状态</th>
+        <th>平台</th>
+        <th>规则</th>
+        <th>最后上报</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for client in clients %}
+      <tr>
+        <td>{{ client.id }}</td>
+        <td><span class="status {{ client.status }}">{{ client.status }}</span></td>
+        <td>{{ client.platform }}</td>
+        <td>{{ client.protocol }} / {{ client.port }} / {{ client.ip_mode }}</td>
+        <td>{{ client.last_report_at|local_dt }}</td>
+        <td>
+          <div class="table-actions">
+            <a href="/clients/{{ client.id }}">查看</a>
+            {% if client.status == "deleted" %}
+            <form method="post" action="/clients/{{ client.id }}/purge" data-confirm="确定彻底删除客户端 {{ client.id }} 及其上报、事件和绑定记录吗？">
+              <button class="link-danger" type="submit">彻底删除</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="empty">暂无客户端</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

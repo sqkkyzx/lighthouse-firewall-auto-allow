@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Lighthouse Firewall{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Lighthouse Firewall</div>
+    <nav>
+      <a href="/">概览</a>
+      <a href="/targets">目标实例</a>
+      <a href="/clients/new">注册客户端</a>
+    </nav>
+    <form method="post" action="/logout">
+      <span>{{ actor }}</span>
+      <button type="submit">退出</button>
+    </form>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <script>
+    document.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-copy-button]");
+      if (!button) {
+        return;
+      }
+
+      const field = button.closest(".copy-field");
+      const code = field ? field.querySelector("code") : null;
+      if (!code) {
+        return;
+      }
+
+      const originalText = button.textContent;
+      try {
+        await copyText(code.innerText);
+        button.textContent = "已复制";
+      } catch {
+        button.textContent = "复制失败";
+      }
+
+      window.setTimeout(() => {
+        button.textContent = originalText;
+      }, 1600);
+    });
+
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-refresh-page]");
+      if (!button) {
+        return;
+      }
+
+      window.location.reload();
+    });
+
+    document.addEventListener("submit", (event) => {
+      const form = event.target.closest("[data-confirm]");
+      if (!form) {
+        return;
+      }
+
+      if (!window.confirm(form.dataset.confirm)) {
+        event.preventDefault();
+      }
+    });
+
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const copied = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (!copied) {
+        throw new Error("copy failed");
+      }
+    }
+  </script>
+</body>
+</html>

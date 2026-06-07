@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}{{ client.id }}{% endblock %}
+{% block content %}
+{% macro copy_code(label_text, value) -%}
+<div class="copy-field">
+  <label>{{ label_text }}</label>
+  <div class="code-wrap">
+    <code>{{ value }}</code>
+    <button class="copy-button" type="button" data-copy-button>复制</button>
+  </div>
+</div>
+{%- endmacro %}
+
+<section class="page-head">
+  <div class="title-inline">
+    <h1>{{ client.id }}</h1>
+    <span class="status {{ client.status }}">{{ client.status }}</span>
+  </div>
+  <div class="page-actions">
+    <button type="button" data-refresh-page>刷新</button>
+  </div>
+</section>
+
+{% if new_token %}
+<section class="token-box">
+  <h2>安装命令</h2>
+  {{ copy_code("脚本地址", script_url) }}
+  {{ copy_code("单行安装", install_command) }}
+  {{ copy_code("新 token", new_token) }}
+</section>
+{% endif %}
+
+<section class="panel detail-grid">
+  <div><label>平台</label><span>{{ client.platform }}</span></div>
+  <div><label>频率</label><span>{{ client.frequency_minutes }} 秒</span></div>
+  <div><label>IP 模式</label><span>{{ client.ip_mode }}</span></div>
+  <div><label>规则</label><span>{{ client.protocol }} / {{ client.port }}</span></div>
+  <div><label>Hostname</label><span>{{ client.hostname or "-" }}</span></div>
+  <div><label>IPv4</label><span>{{ client.last_ipv4 or "-" }}</span></div>
+  <div class="detail-wide"><label>IPv6</label><span>{{ client.last_ipv6 or "-" }}</span></div>
+  <div><label>最后上报</label><span>{{ client.last_report_at|local_dt }}</span></div>
+</section>
+
+<section class="actions">
+  {% if client.status != "active" and client.status != "deleted" %}
+  <form method="post" action="/clients/{{ client.id }}/status/active"><button type="submit">启用</button></form>
+  {% endif %}
+  {% if client.status != "disabled" and client.status != "deleted" %}
+  <form method="post" action="/clients/{{ client.id }}/status/disabled"><button type="submit">禁用</button></form>
+  {% endif %}
+  {% if client.status != "blocked" and client.status != "deleted" %}
+  <form method="post" action="/clients/{{ client.id }}/status/blocked"><button type="submit">阻止</button></form>
+  {% endif %}
+  {% if client.status != "deleted" %}
+  <form method="post" action="/clients/{{ client.id }}/rotate-token"><button type="submit">轮换 token</button></form>
+  <form method="post" action="/clients/{{ client.id }}/status/deleted"><button class="danger" type="submit">删除</button></form>
+  {% else %}
+  <span class="empty">客户端已删除，中心端将拒绝后续上报。</span>
+  <form method="post" action="/clients/{{ client.id }}/purge" data-confirm="确定彻底删除客户端 {{ client.id }} 及其上报、事件和绑定记录吗？">
+    <button class="danger" type="submit">彻底删除</button>
+  </form>
+  {% endif %}
+</section>
+
+<section class="token-box">
+  <h2>卸载命令</h2>
+  {{ copy_code("单行卸载", uninstall_command) }}
+</section>
+
+<section class="panel">
+  <h2>绑定目标</h2>
+  <table>
+    <thead><tr><th>别名</th><th>地域</th><th>实例</th><th>状态</th></tr></thead>
+    <tbody>
+      {% for target in client.targets %}
+      <tr>
+        <td>{{ target.alias }}</td>
+        <td>{{ target.region }}</td>
+        <td>{{ target.instance_id }}</td>
+        <td>{{ "启用" if target.enabled else "停用" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="empty">未绑定目标</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>最近上报</h2>
+  <table>
+    <thead><tr><th>时间</th><th>Hostname</th><th>IPv4</th><th>IPv6</th><th>Agent</th></tr></thead>
+    <tbody>
+      {% for report in client.reports[-10:]|reverse %}
+      <tr>
+        <td>{{ report.created_at|local_dt }}</td>
+        <td>{{ report.hostname }}</td>
+        <td>{{ report.ipv4 or "-" }}</td>
+        <td>{{ report.ipv6 or "-" }}</td>
+        <td>{{ report.agent_version or "-" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty">暂无上报</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>防火墙事件</h2>
+  <table>
+    <thead><tr><th>时间</th><th>目标</th><th>动作</th><th>状态</th><th>消息</th></tr></thead>
+    <tbody>
+      {% for event in client.firewall_events[-20:]|reverse %}
+      <tr>
+        <td>{{ event.created_at|local_dt }}</td>
+        <td>{{ event.target.alias }}</td>
+        <td>{{ event.action }}</td>
+        <td>{{ event.status }}</td>
+        <td>{{ event.message }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty">暂无事件</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}目标实例{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>目标实例</h1>
+</section>
+
+<section class="panel">
+  <h2>新增目标</h2>
+  <form class="grid-form" method="post" action="/targets">
+    <label>地域<input name="region" placeholder="ap-guangzhou" required></label>
+    <label>实例 ID<input name="instance_id" placeholder="lhins-xxxx" required></label>
+    <label>别名<input name="alias" placeholder="生产入口"></label>
+    <button type="submit">添加</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>目标列表</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>别名</th>
+        <th>地域</th>
+        <th>实例</th>
+        <th>状态</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for target in targets %}
+      <tr>
+        <td>{{ target.id }}</td>
+        <td>{{ target.alias }}</td>
+        <td>{{ target.region }}</td>
+        <td>{{ target.instance_id }}</td>
+        <td>{{ "启用" if target.enabled else "停用" }}</td>
+        <td>
+          <form method="post" action="/targets/{{ target.id }}/toggle">
+            <button type="submit">{{ "停用" if target.enabled else "启用" }}</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="empty">暂无目标实例</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
