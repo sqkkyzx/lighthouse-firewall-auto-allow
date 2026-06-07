@@ -15,7 +15,9 @@
         </entry>
         <entry key="ruff">
           <value>
-            <ToolEntry />
+            <ToolEntry>
+              <option name="enabled" value="true" />
+            </ToolEntry>
           </value>
         </entry>
         <entry key="ty">

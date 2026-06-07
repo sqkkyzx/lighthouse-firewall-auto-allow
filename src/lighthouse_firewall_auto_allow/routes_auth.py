@@ -18,7 +18,7 @@ def configure_oauth(app, settings: Settings) -> None:
             client_id=settings.oidc_client_id,
             client_secret=settings.oidc_client_secret,
             server_metadata_url=settings.oidc_discovery_url,
-            client_kwargs={"scope": "openid profile email"},
+            client_kwargs={"scope": settings.oidc_scope},
         )
     app.state.oauth = oauth
 

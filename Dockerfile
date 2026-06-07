@@ -12,8 +12,8 @@ COPY src /app/src
 COPY alembic.ini /app/alembic.ini
 COPY migrations /app/migrations
 
-RUN uv sync --no-dev
+RUN uv sync --frozen --no-dev
 
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", "lighthouse_firewall_auto_allow.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/app/.venv/bin/uvicorn", "lighthouse_firewall_auto_allow.main:app", "--host", "0.0.0.0", "--port", "8000"]

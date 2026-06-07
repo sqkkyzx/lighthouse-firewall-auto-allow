@@ -34,6 +34,8 @@ docker compose up -d --build
 - `OIDC_ISSUER`
 - `OIDC_CLIENT_ID`
 - `OIDC_CLIENT_SECRET`
+- `OIDC_SCOPE`，默认 `openid profile email`；如果 OIDC 网关返回的 `id_token` 不包含
+  `nonce`，可设为 `profile email`，让应用改用 userinfo 获取用户资料。
 - `ADMIN_EMAILS`
 - `TENCENTCLOUD_SECRET_ID`
 - `TENCENTCLOUD_SECRET_KEY`

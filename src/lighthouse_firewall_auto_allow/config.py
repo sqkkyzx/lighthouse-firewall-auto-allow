@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     oidc_issuer: str = Field(default="")
     oidc_client_id: str = Field(default="")
     oidc_client_secret: str = Field(default="")
+    oidc_scope: str = Field(default="openid profile email")
     admin_emails: str = Field(default="")
 
     tencentcloud_secret_id: str = Field(default="")
