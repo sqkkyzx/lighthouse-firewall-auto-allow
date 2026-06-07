@@ -7,7 +7,7 @@ ENV UV_COMPILE_BYTECODE=1
 WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv:0.7.8 /uv /usr/local/bin/uv
-COPY pyproject.toml README.md /app/
+COPY pyproject.toml uv.lock README.md /app/
 COPY src /app/src
 COPY alembic.ini /app/alembic.ini
 COPY migrations /app/migrations

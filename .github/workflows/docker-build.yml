@@ -1,0 +1,129 @@
+name: 构建并推送 Lighthouse 防火墙镜像
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - ".github/workflows/docker-build.yml"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "README.md"
+      - "alembic.ini"
+      - "migrations/**"
+      - "src/**"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'lighthouse-firewall-auto-allow' }}
+  GHCR_NAMESPACE: ${{ vars.GHCR_NAMESPACE || github.repository_owner }}
+  DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || github.repository_owner }}
+  RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build-and-push:
+    name: 构建并推送镜像
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: 📥 拉取代码仓库
+        uses: actions/checkout@v6
+
+      - name: 🏷️ 读取版本号
+        id: version
+        shell: python
+        run: |
+          import os
+          import tomllib
+
+          with open("pyproject.toml", "rb") as f:
+              pyproject = tomllib.load(f)
+
+          version = pyproject["project"]["version"]
+          image_name = os.environ["IMAGE_NAME"]
+          ghcr_namespace = os.environ["GHCR_NAMESPACE"]
+          dockerhub_namespace = os.environ["DOCKERHUB_NAMESPACE"]
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"version={version}\n")
+              out.write(f"ghcr_image=ghcr.io/{ghcr_namespace}/{image_name}\n")
+              out.write(f"dockerhub_image={dockerhub_namespace}/{image_name}\n")
+
+      - name: ⚙️ 配置 Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: 🔑 登录 GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.GHCR_USERNAME || github.actor }}
+          password: ${{ secrets.GHCR_TOKEN || github.token }}
+
+      - name: 🔑 登录 Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 📝 准备 Docker 镜像元数据
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            ${{ steps.version.outputs.ghcr_image }}
+            ${{ steps.version.outputs.dockerhub_image }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+            type=sha,prefix=sha-
+
+      - name: 📦 构建并推送镜像
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 📢 发送构建通知
+        if: always()
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          MIRROR_HOST: ${{ vars.MIRROR_REGISTRY_HOST }}
+        run: |
+          VERSION="v${{ steps.version.outputs.version }}"
+          GHCR_IMAGE="${{ steps.version.outputs.ghcr_image }}"
+          DOCKERHUB_IMAGE="${{ steps.version.outputs.dockerhub_image }}"
+          MIRROR_LINE=""
+          if [ -n "$MIRROR_HOST" ]; then
+            MIRROR_LINE="\n\n> 镜像加速地址: ${MIRROR_HOST}/${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}"
+          fi
+
+          if [ "${{ job.status }}" = "success" ]; then
+            TITLE="✅ Lighthouse 防火墙镜像构建成功"
+            MSG="#### Lighthouse 防火墙镜像构建成功 ✅\n\n> 仓库: ${{ github.repository }}\n\n> 版本: ${VERSION}\n\n> GHCR: ${GHCR_IMAGE}:${{ steps.version.outputs.version }}\n\n> Docker Hub: ${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}${MIRROR_LINE}\n\n> 构建记录: [打开 GitHub Actions](${{ env.RUN_URL }})"
+          else
+            TITLE="❌ Lighthouse 防火墙镜像构建失败"
+            MSG="#### Lighthouse 防火墙镜像构建失败 ❌\n\n> 仓库: ${{ github.repository }}\n\n> 版本: ${VERSION}\n\n> 构建记录: [打开 GitHub Actions](${{ env.RUN_URL }})"
+          fi
+
+          if [ -n "$WEBHOOK_URL" ]; then
+            curl -X POST "$WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"msgtype\": \"markdown\",
+                \"markdown\": {
+                  \"title\": \"$TITLE\",
+                  \"text\": \"$MSG\"
+                }
+              }"
+          else
+            echo "未配置 WEBHOOK_URL，跳过构建通知。"
+          fi
