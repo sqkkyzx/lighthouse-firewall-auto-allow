@@ -28,8 +28,27 @@ def test_linux_script_contains_report_url_ip_endpoints_and_uninstall() -> None:
     assert "https://ip4.blsy.team" in script.body
     assert "https://ip6.blsy.team" in script.body
     assert "uninstall" in script.body
+    assert 'cp "$0"' not in script.body
     assert "secret" not in script.body
     assert "https://center.example/api/v1/report/office" not in script.body
+
+
+def test_macos_script_does_not_copy_shell_argv0_when_piped() -> None:
+    client = Client(
+        id="office",
+        token_hash="hash",
+        platform="macos",
+        frequency_minutes=5,
+        ip_mode="ipv4",
+        protocol="TCP",
+        port="22",
+    )
+
+    script = generate_agent_script(client, token="secret", public_base_url="https://center.example")
+
+    assert script.filename == "install-macos.sh"
+    assert 'cp "$0"' not in script.body
+    assert "Usage: \\$0 uninstall" in script.body
 
 
 def test_windows_script_uses_scheduled_task() -> None:

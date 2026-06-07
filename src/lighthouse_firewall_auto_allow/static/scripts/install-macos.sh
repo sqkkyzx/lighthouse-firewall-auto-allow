@@ -46,7 +46,30 @@ fi
 
 log "Installing $CLIENT_ID"
 mkdir -p "$BASE_DIR"
-cp "$0" "$INSTALLER"
+cat > "$INSTALLER" <<INSTALLER
+#!/usr/bin/env bash
+set -euo pipefail
+
+CLIENT_ID="$CLIENT_ID"
+BASE_DIR="$BASE_DIR"
+RUNNER="$RUNNER"
+PLIST="$PLIST"
+
+log() {
+  printf '[%s] %s\n' "\$(date '+%Y-%m-%d %H:%M:%S')" "\$*"
+}
+
+if [[ "\${1:-}" != "uninstall" ]]; then
+  echo "Usage: \$0 uninstall" >&2
+  exit 2
+fi
+
+log "Uninstalling \$CLIENT_ID"
+launchctl unload "\$PLIST" >/dev/null 2>&1 || true
+rm -f "\$PLIST" "\$RUNNER" "\$0"
+rmdir "\$BASE_DIR" >/dev/null 2>&1 || true
+log "Uninstalled \$CLIENT_ID"
+INSTALLER
 chmod +x "$INSTALLER"
 
 cat > "$RUNNER" <<RUNNER
